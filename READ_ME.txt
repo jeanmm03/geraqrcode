@@ -1,0 +1,1 @@
+Informações gerais do .txt do repositório Github
