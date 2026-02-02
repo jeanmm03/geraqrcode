@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadastro de Entrega</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<style>
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 1.5cm;
+  }
+
+  body * {
+    visibility: hidden;
+    font-size: 20pt;
+
+  }
+
+  #printRoot, #printRoot * {
+    visibility: visible;
+  }
+
+  #printRoot {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  .print-page {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2cm;
+    width: 100%;
+    page-break-after: always;
+  }
+
+  .print-page:last-child {
+    page-break-after: auto;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+</style>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+<div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-lg space-y-6">
+  <h2 class="text-2xl font-bold text-center">Cadastro de Entrega</h2>
+
+  <div class="space-y-4">
+    <input id="cliente" placeholder="Cliente" class="w-full border p-2 rounded">
+    <input id="cidade" placeholder="Cidade + UF" class="w-full border p-2 rounded">
+    <input id="carga" placeholder="Número da Carga" class="w-full border p-2 rounded">
+    <input id="volumes" type="number" placeholder="Volumes" class="w-full border p-2 rounded">
+    <input id="paletes" type="number" placeholder="Paletes" class="w-full border p-2 rounded">
+
+    <select id="tipoPalete" class="w-full border p-2 rounded">
+      <option value="">Tipo de Palete</option>
+      <option>Normal</option>
+      <option>Chep</option>
+      <option>Normal + Chep</option>
+    </select>
+
+    <textarea id="requisito" placeholder="Requisito" maxlength="300"
+      class="w-full border p-2 rounded"></textarea>
+
+    <input id="dataEntrega" type="date" class="w-full border p-2 rounded">
+
+    <button onclick="enviarDados()"
+      class="w-full bg-yellow-400 py-2 rounded hover:bg-yellow-500">
+      Enviar Dados
+    </button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+  <div class="bg-white p-6 rounded-xl w-full max-w-lg text-center space-y-4">
+    <div id="dadosResumo"></div>
+
+    <div class="flex gap-4 justify-center no-print">
+      <button onclick="imprimirELimpar()" class="bg-yellow-500 px-4 py-2 rounded text-white">
+        Imprimir
+      </button>
+      <button onclick="fecharModal()" class="bg-gray-300 px-4 py-2 rounded">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ÁREA DE IMPRESSÃO -->
+<div id="printRoot"></div>
+
+<script>
+function gerarCodigo() {
+  const d = new Date();
+  const ts = d.toISOString().replace(/\D/g,'').slice(0,14);
+  const rand = Math.random().toString(36).substring(2,8).toUpperCase();
+  return `${ts}-${rand}`;
+}
+
+function enviarDados() {
+  const dados = {
+    cliente: cliente.value,
+    cidade: cidade.value,
+    carga: carga.value,
+    volumes: volumes.value,
+    paletes: parseInt(paletes.value),
+    tipoPalete: tipoPalete.value,
+    requisito: requisito.value,
+    dataEntrega: dataEntrega.value,
+    codigoBase: gerarCodigo()
+  };
+
+  if (Object.values(dados).some(v => !v)) {
+    Swal.fire("Erro", "Preencha todos os campos", "warning");
+    return;
+  }
+
+  dadosResumo.innerHTML = `
+    <p><b>Cliente:</b> ${dados.cliente}</p>
+    <p><b>Cidade:</b> ${dados.cidade}</p>
+    <p><b>Carga:</b> ${dados.carga}</p>
+    <p><b>Volumes:</b> ${dados.volumes}</p>
+    <p><b>Paletes:</b> ${dados.paletes} (${dados.tipoPalete})</p>
+    <p><b>Entrega:</b> ${dados.dataEntrega}</p>
+  `;
+
+  gerarPaginasImpressao(dados);
+
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+}
+
+function gerarPaginasImpressao(d) {
+  const root = document.getElementById("printRoot");
+  root.innerHTML = "";
+
+  for (let i = 1; i <= d.paletes; i++) {
+    const page = document.createElement("div");
+    page.className = "print-page";
+
+    const info = document.createElement("div");
+    info.innerHTML = `
+      <p><b>Cliente:</b> ${d.cliente}</p>
+      <p><b>Cidade:</b> ${d.cidade}</p>
+      <p><b>Carga:</b> ${d.carga}</p>
+      <p><b>Palete:</b> ${i}/${d.paletes}</p>
+      <p><b>Entrega:</b> ${d.dataEntrega}</p>
+      <p><b>Requisito:</b> ${d.requisito}</p>
+    `;
+
+    const qrBox = document.createElement("div");
+
+    new QRCode(qrBox, {
+      text: `${d.codigoBase}-P${i}`,
+      width: 189,
+      height: 189
+    });
+
+    page.appendChild(info);
+    page.appendChild(qrBox);
+    root.appendChild(page);
+  }
+}
+
+function imprimirELimpar() {
+  window.print();
+  location.reload();
+}
+
+
+function fecharModal() {
+  location.reload();
+}
+</script>
+
+</body>
+</html>
