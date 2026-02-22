@@ -19,7 +19,6 @@
   body * {
     visibility: hidden;
     font-size: 30pt;
-
   }
 
   #printRoot, #printRoot * {
@@ -75,7 +74,14 @@
     <textarea id="requisito" placeholder="Requisito" maxlength="300"
       class="w-full border p-2 rounded"></textarea>
 
+    <!-- DATA -->
     <input id="dataEntrega" type="date" class="w-full border p-2 rounded">
+
+    <!-- NOVO: AGENDAR -->
+    <label class="flex items-center gap-2 text-sm">
+      <input type="checkbox" id="agendar" onchange="toggleAgendar()">
+      A AGENDAR
+    </label>
 
     <button onclick="enviarDados()"
       class="w-full bg-yellow-400 py-2 rounded hover:bg-yellow-500">
@@ -84,7 +90,6 @@
   </div>
 </div>
 
-<!-- MODAL -->
 <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
   <div class="bg-white p-6 rounded-xl w-full max-w-lg text-center space-y-4">
     <div id="dadosResumo"></div>
@@ -100,10 +105,19 @@
   </div>
 </div>
 
-<!-- ÁREA DE IMPRESSÃO -->
 <div id="printRoot"></div>
 
 <script>
+
+function toggleAgendar(){
+  if(agendar.checked){
+    dataEntrega.value = ""
+    dataEntrega.disabled = true
+  } else {
+    dataEntrega.disabled = false
+  }
+}
+
 function gerarCodigo() {
   const d = new Date();
   const ts = d.toISOString().replace(/\D/g,'').slice(0,14);
@@ -112,6 +126,9 @@ function gerarCodigo() {
 }
 
 function enviarDados() {
+
+  const dataFinal = agendar.checked ? "A AGENDAR" : dataEntrega.value
+
   const dados = {
     cliente: cliente.value,
     cidade: cidade.value,
@@ -120,11 +137,20 @@ function enviarDados() {
     paletes: parseInt(paletes.value),
     tipoPalete: tipoPalete.value,
     requisito: requisito.value,
-    dataEntrega: dataEntrega.value,
+    dataEntrega: dataFinal,
     codigoBase: gerarCodigo()
   };
 
-  if (Object.values(dados).some(v => !v)) {
+  if (
+    !dados.cliente ||
+    !dados.cidade ||
+    !dados.carga ||
+    !dados.volumes ||
+    !dados.paletes ||
+    !dados.tipoPalete ||
+    !dados.requisito ||
+    (!agendar.checked && !dados.dataEntrega)
+  ) {
     Swal.fire("Erro", "Preencha todos os campos", "warning");
     return;
   }
@@ -181,12 +207,11 @@ function imprimirELimpar() {
   location.reload();
 }
 
-
 function fecharModal() {
   location.reload();
 }
+
 </script>
 
 </body>
 </html>
-
